@@ -2,12 +2,14 @@ package ls1.efrei.calculator;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Bundle;
 import android.view.View;
 import android.webkit.ValueCallback;
 import android.webkit.WebView;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -21,12 +23,29 @@ public class MainActivity extends AppCompatActivity {
     WebView webView;
     TextView operation;
     TextView result;
+    Button myButton;
+
+    @SuppressLint("ResourceType")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         webView = new WebView(this);
         webView.getSettings().setJavaScriptEnabled(true);
+        myButton = new Button(this);
+        myButton.setId(2327);
+        myButton.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0.2f));
+        myButton.setText("=");
+        myButton.setTextSize(30);
+        myButton.setBackgroundColor(getResources().getColor(R.color.equals));
+        myButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                myClickHandler(v);
+            }
+        });
+        LinearLayout centerLinearLayout = findViewById(R.id.center_layout);
+        centerLinearLayout.addView(myButton);
         operation = findViewById(R.id.operation);
         result = findViewById(R.id.result);
         digits.add(R.id._0);
@@ -46,13 +65,14 @@ public class MainActivity extends AppCompatActivity {
         operators.add(R.id._multiply);
     }
 
+    @SuppressLint("ResourceType")
     public void myClickHandler(View view) {
         try{
         String input = ((Button)view).getText().toString();
         if(digits.contains(view.getId()) || operators.contains(view.getId())){
             operation.setText(operation.getText().toString().concat(String.valueOf(input)));
         }
-        if(view.getId() == R.id._equals){
+        if(view.getId() == 2327){
                     webView.evaluateJavascript(operation.getText().toString(), new ValueCallback<String>() {
                         @Override
                         public void onReceiveValue(String s) {
