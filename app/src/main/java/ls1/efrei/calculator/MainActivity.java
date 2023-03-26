@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.View;
 import android.webkit.ValueCallback;
 import android.webkit.WebView;
@@ -13,6 +14,9 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.net.Socket;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,6 +24,7 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
     List<Integer> digits = new ArrayList<Integer>();
     List<Integer> operators = new ArrayList<Integer>();
+    private Handler handler;
     WebView webView;
     TextView operation;
     TextView result;
@@ -32,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         webView = new WebView(this);
         webView.getSettings().setJavaScriptEnabled(true);
+        handler = new Handler();
         myButton = new Button(this);
         myButton.setId(2327);
         myButton.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 0.2f));
@@ -65,35 +71,51 @@ public class MainActivity extends AppCompatActivity {
         operators.add(R.id._multiply);
     }
 
+
+
     @SuppressLint("ResourceType")
     public void myClickHandler(View view) {
-        try{
-        String input = ((Button)view).getText().toString();
-        if(digits.contains(view.getId()) || operators.contains(view.getId())){
-            operation.setText(operation.getText().toString().concat(String.valueOf(input)));
-        }
-        if(view.getId() == 2327){
-                    webView.evaluateJavascript(operation.getText().toString(), new ValueCallback<String>() {
-                        @Override
-                        public void onReceiveValue(String s) {
-                           try {
-                               double output = Double.parseDouble(s);
-                               DecimalFormat df = new DecimalFormat("#.##########"); // set the format to two decimal places
-                               String formattedValue = df.format(output); // format the value as a string
-                               double roundedValue = Double.parseDouble(formattedValue);
-                               result.setText(String.valueOf(roundedValue));
-                               operation.setText("");
-                           }
-                           catch (NumberFormatException e) {
-                               Toast.makeText(getApplicationContext(), "Arithmetic Error", Toast.LENGTH_LONG).show();
-                               operation.setText("");
-                           }
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                    try{
+                        String input = ((Button)view).getText().toString();
+                        if(digits.contains(view.getId()) || operators.contains(view.getId())){
+                            handler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    operation.setText(operation.getText().toString().concat(String.valueOf(input)));
+                                }
+                            });
+
                         }
-                    });
-                }
-        }
-        catch (Exception e){
-            Toast.makeText(this, "Arithmetic Error", Toast.LENGTH_LONG).show();
-        }
+                        if(view.getId() == 2327){
+                            Socket conn = new Socket("10.0.2.2", 9876);
+
+                            DataInputStream dis = new DataInputStream(conn.getInputStream());
+                            DataOutputStream dos = new DataOutputStream(conn.getOutputStream());
+                            dos.writeUTF(operation.getText().toString());
+                            double res = dis.readDouble();
+                            dos.close();
+                            dis.close();
+                            conn.close();
+                            handler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    result.setText(String.valueOf(res));
+                                }
+                            });
+
+                        }
+                    }
+                    catch(Exception e){
+                        e.printStackTrace();
+                    }
+
+            }
+        };
+        new Thread(runnable).start();
+        //runOnUiThread(runnable);
+
     }
 }
