@@ -117,5 +117,48 @@ public class MainActivity extends AppCompatActivity {
         new Thread(runnable).start();
         //runOnUiThread(runnable);
 
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                    String input = ((Button)view).getText().toString();
+                    if(digits.contains(view.getId()) || operators.contains(view.getId())){
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                operation.setText(operation.getText().toString().concat(String.valueOf(input)));
+                            }
+                        });
+
+                    }
+                    if(view.getId() == 2327){
+                        webView.evaluateJavascript(operation.getText().toString(), new ValueCallback<String>() {
+                            @Override
+                            public void onReceiveValue(String s) {
+                                try {
+                                    double output = Double.parseDouble(s);
+                                    DecimalFormat df = new DecimalFormat("#.##########"); // set the format to two decimal places
+                                    String formattedValue = df.format(output); // format the value as a string
+                                    double roundedValue = Double.parseDouble(formattedValue);
+                                    handler.post(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            result.setText(String.valueOf(roundedValue));
+                                            operation.setText("");
+                                        }
+                                    });
+
+                                }
+                                catch (NumberFormatException e) {
+                                    Toast.makeText(getApplicationContext(), "Arithmetic Error", Toast.LENGTH_LONG).show();
+                                    operation.setText("");
+                                }
+                            }
+                        });
+                    }
+
+            }
+        };
+        runOnUiThread(runnable);
+
     }
 }
